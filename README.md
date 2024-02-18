@@ -1,4 +1,4 @@
-mkdir /www/wwwroot/redis-api
+mkdir /www/wwwroot/redis-api \n
 cd /www/wwwroot/redis-api
 docker stop redis-api && docker rm redis-api && docker rmi redis-api
 docker build -t redis-api .
