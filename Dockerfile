@@ -1,4 +1,9 @@
-FROM python:3.8.17-slim-buster
+FROM python:3.10-slim-bullseye
+
+RUN mkdir /app
+RUN mkdir /logs
+COPY ./*.txt ./*.py ./*.sh ./*.onnx /app/
+
 
 RUN cd /app \
     && mkdir logs \
