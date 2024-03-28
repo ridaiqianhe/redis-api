@@ -1,10 +1,5 @@
 FROM python:3.8.17-slim-buster
 
-RUN mkdir /app
-RUN mkdir /logs
-COPY ./*.txt ./*.py ./*.sh ./*.onnx /app/
-
-
 RUN cd /app \
     && mkdir logs \
     && python3 -m pip install --upgrade pip \
