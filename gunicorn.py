@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 from multiprocessing import cpu_count
-port = 9999
+port = 16379
 bind = f"0.0.0.0:{port}"
 # daemon = True
 workers = cpu_count()  + 1
