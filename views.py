@@ -134,7 +134,7 @@ def slideread():
     if not data:
         return {"count": 0}
     else:
-        value = random.choice(data[-300:])
+        value = random.choice(data[-100:])
         value1 = value.split('###')
         token, validate = value1[0], value1[1]
         r.lrem('slides', 1, value)
