@@ -1,25 +1,48 @@
 # -*- coding: utf-8 -*-
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 from multiprocessing import cpu_count
-port = 16379
+
+port = 16739
 bind = f"0.0.0.0:{port}"
-# daemon = True
-workers = cpu_count()  + 1
+workers = cpu_count() + 1
 threads = 2
 worker_class = "gthread"
 forwarded_allow_ips = '*'
-#keepalive = 6
-#timeout = 65
-#graceful_timeout = 10
 worker_connections = 65535
 loglevel = 'error'
 reload = True
-#spew = True
-#日志级别，这个日志级别指的是错误日志的级别，而访问日志的级别无法设置
-access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" "%({X-Real-IP}i)s"'
-accesslog = f"./logs/logs.log"      #访问日志文件
-errorlog = "./logs/error.log"  # 错误日志文件
 
+# 创建日志文件夹
+log_dir = "./logs"
+os.makedirs(log_dir, exist_ok=True)
+
+# 设置访问日志和错误日志的文件路径
+accesslog_path = os.path.join(log_dir, "logs.log")
+errorlog_path = os.path.join(log_dir, "error.log")
+
+# 设置访问日志
+access_log_handler = RotatingFileHandler(accesslog_path, maxBytes=1 * 1024 * 1024 * 1024, backupCount=5)  # 1GB 大小，保留 5 个备份
+access_log_handler.setLevel(logging.INFO)
+access_log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+access_log_handler.setFormatter(access_log_formatter)
+
+# 设置错误日志
+error_log_handler = RotatingFileHandler(errorlog_path, maxBytes=1 * 1024 * 1024 * 1024, backupCount=5)  # 1GB 大小，保留 5 个备份
+error_log_handler.setLevel(logging.ERROR)
+error_log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+error_log_handler.setFormatter(error_log_formatter)
+
+# 获取 Gunicorn 的 logger
+gunicorn_logger = logging.getLogger('gunicorn.error')
+gunicorn_logger.addHandler(access_log_handler)
+gunicorn_logger.addHandler(error_log_handler)
+
+# 访问日志格式
+access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" "%({X-Real-IP}i)s"'
+accesslog = accesslog_path
+errorlog = errorlog_path
 
 # -c CONFIG    : CONFIG,配置文件的路径，通过配置文件启动；生产环境使用；
 
