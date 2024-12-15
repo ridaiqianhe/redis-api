@@ -25,7 +25,27 @@ def cleanup_old_data(name='slides', rmtime=900):
     r.zremrangebyscore(name, '-inf', current_time - rmtime)
     return '1'
 
-
+@app.route('/api/slideread', methods=['GET'])
+def slideread():
+    """读取 slide 数据"""
+    cleanup_old_data('slides', rmtime=900)
+    type_ = request.values.get('type')
+    r_len = r.zcard('slides')
+    if r_len <= 30 and str(type_) != '1':
+        return jsonify({"count": 0, 'msg': r_len})
+    # 获取所有数据
+    data = r.zrange('slides', 0, -1)
+    if not data:
+        return jsonify({"count": 0})
+    else:
+        value = random.choice(data[-100:])
+        token, validate = value.split('###')
+        # 删除已读取的数据
+        r.zrem('slides', value)
+        result = {"token": token, "validate": validate,
+                  "count": r_len - 1}
+        return jsonify(result)
+        
 @app.route('/api/slidewrite', methods=['POST'])
 def slidewrite():
     """写入 slide 数据"""
@@ -64,19 +84,7 @@ def slidewrite():
         return jsonify({'code': 0, 'msg': f'系统错误: {str(e)}'})
 
 
-@app.route('/api/slidewrite', methods=['POST'])
-def slidewrite():
-    """写入 slide 数据"""
-    token = request.form.get('token')
-    validate = request.form.get('validate')
-    if not token or not validate:
-        return jsonify({'code': 0, 'msg': '参数缺失'})
-    timestamp = int(time.time())
-    data = f"{token}###{validate}"
-    r.zadd('slides', {data: timestamp})
-    # 限制集合的最大长度
-    r.zremrangebyrank('slides', 0, -3001)
-    return jsonify({'code': 1, 'count': r.zcard('slides')})
+ 
 
 
 @app.route('/api/yidunread', methods=['GET'])
