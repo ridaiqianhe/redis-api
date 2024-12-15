@@ -26,26 +26,42 @@ def cleanup_old_data(name='slides', rmtime=900):
     return '1'
 
 
-@app.route('/api/slideread', methods=['GET'])
-def slideread():
-    """读取 slide 数据"""
-    cleanup_old_data('slides', rmtime=900)
-    type_ = request.values.get('type')
-    r_len = r.zcard('slides')
-    if r_len <= 30 and str(type_) != '1':
-        return jsonify({"count": 0, 'msg': r_len})
-    # 获取所有数据
-    data = r.zrange('slides', 0, -1)
-    if not data:
-        return jsonify({"count": 0})
-    else:
-        value = random.choice(data[-100:])
-        token, validate = value.split('###')
-        # 删除已读取的数据
-        r.zrem('slides', value)
-        result = {"token": token, "validate": validate,
-                  "count": r_len - 1}
-        return jsonify(result)
+@app.route('/api/slidewrite', methods=['POST'])
+def slidewrite():
+    """写入 slide 数据"""
+    try:
+        token = request.form.get('token')
+        validate = request.form.get('validate')
+        if not token or not validate:
+            return jsonify({'code': 0, 'msg': '参数缺失'})
+        
+        timestamp = int(time.time())
+        data = f"{token}###{validate}"
+        
+        # 检查键类型并处理可能的错误
+        try:
+            key_type = r.type('slides')
+            if key_type != 'zset' and key_type is not None:
+                # 如果键存在但类型不是 zset，删除它
+                r.delete('slides')
+            
+            r.zadd('slides', {data: timestamp})
+        except redis.exceptions.ResponseError as e:
+            if 'WRONGTYPE' in str(e):
+                # 删除错误类型的键并重试
+                r.delete('slides')
+                r.zadd('slides', {data: timestamp})
+            else:
+                # 其他 Redis 错误
+                return jsonify({'code': 0, 'msg': f'Redis错误: {str(e)}'})
+        
+        # 限制集合的最大长度
+        r.zremrangebyrank('slides', 0, -3001)
+        return jsonify({'code': 1, 'count': r.zcard('slides')})
+        
+    except Exception as e:
+        # 捕获所有其他可能的异常
+        return jsonify({'code': 0, 'msg': f'系统错误: {str(e)}'})
 
 
 @app.route('/api/slidewrite', methods=['POST'])
@@ -88,16 +104,27 @@ def yidunread():
 @app.route('/api/yidunwrite', methods=['POST'])
 def yidunwrite():
     """写入 yidun 数据"""
-    token = request.form.get('token')
-    validate = request.form.get('validate')
-    if not token or not validate:
-        return jsonify({'code': 0, 'msg': '参数缺失'})
-    timestamp = int(time.time())
-    data = f"{token}###{validate}"
-    r.zadd('yiduns', {data: timestamp})
-    # 限制集合的最大长度
-    r.zremrangebyrank('yiduns', 0, -3001)
-    return jsonify({'code': 1, 'count': r.zcard('yiduns')})
+    try:
+        token = request.form.get('token')
+        validate = request.form.get('validate')
+        if not token or not validate:
+            return jsonify({'code': 0, 'msg': '参数缺失'})
+        
+        timestamp = int(time.time())
+        data = f"{token}###{validate}"
+        
+        try:
+            r.zadd('yiduns', {data: timestamp})
+        except redis.exceptions.ResponseError as e:
+            if 'WRONGTYPE' in str(e):
+                # 删除错误类型的键并重试
+                r.delete('yiduns')
+                r.zadd('yiduns', {data: timestamp})
+        
+        r.zremrangebyrank('yiduns', 0, -3001)
+        return jsonify({'code': 1, 'count': r.zcard('yiduns')})
+    except Exception as e:
+        return jsonify({'code': 0, 'msg': str(e)})
 
 
 @app.route('/api/readnum', methods=['GET'])
