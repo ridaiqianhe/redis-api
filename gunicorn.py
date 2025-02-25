@@ -4,7 +4,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from multiprocessing import cpu_count
 
-port = 16739
+port = 16379
 bind = f"0.0.0.0:{port}"
 workers = cpu_count() + 1
 threads = 2
