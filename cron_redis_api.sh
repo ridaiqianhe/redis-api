@@ -1,6 +1,6 @@
 #!/bin/bash
 TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-CRON_LOG="./logs/cron.log"
+CRON_LOG="/root/redis-api/logs/cron.log"
 
 # 确保日志目录存在
 mkdir -p "$(dirname "$CRON_LOG")"
@@ -11,3 +11,5 @@ if ! curl -s http://127.0.0.1:16379 > /dev/null; then
 else
     echo "[$TIMESTAMP] 服务正常。" >> "$CRON_LOG"
 fi
+
+
